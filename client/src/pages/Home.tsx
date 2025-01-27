@@ -1,6 +1,6 @@
 import { Socket } from "socket.io-client";
 import { useSocket } from "../providers/Socket";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function Home() {
@@ -22,13 +22,20 @@ function Home() {
     roomId: string;
   }
 
-  const handleRoomJoined = ({ roomId }: JoinRoomResponse) => {
-    console.log("Room joined successfully.", roomId);
-    navigate(`/room/${roomId}`);
-  };
+  const handleRoomJoined = useCallback(
+    ({ roomId }: JoinRoomResponse) => {
+      console.log("Room joined successfully.", roomId);
+      navigate(`/room/${roomId}`);
+    },
+    [navigate]
+  );
 
   useEffect(() => {
     socket?.on("joined-room", handleRoomJoined);
+
+    return () => {
+      socket?.off("joined-room", handleRoomJoined);
+    };
   }, [socket]);
 
   return (
