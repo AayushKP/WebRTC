@@ -12,6 +12,7 @@ function Room() {
   const socket = useSocket() as Socket | null;
   const peerContext = usePeer();
   const [myStream, setMyStream] = useState<MediaStream | null>(null);
+  const [remoteEmailId, setRemoteEmailId] = useState<string | null>();
 
   if (!peerContext) {
     throw new Error("usePeer must be used within a PeerProvider");
@@ -31,6 +32,7 @@ function Room() {
       console.log("New user joined:", emailId);
       const offer: RTCSessionDescriptionInit = await createOffer();
       socket?.emit("call-user", { emailId, offer });
+      setRemoteEmailId(emailId);
     },
     [createOffer, socket]
   );
@@ -46,14 +48,16 @@ function Room() {
       console.log("Incoming call from:", from, offer);
       const ans = await createAnswer(offer);
       socket?.emit("call-accepted", { emailId: from, ans });
+      setRemoteEmailId(from);
     },
     [createAnswer, socket]
   );
 
   const handleCallAccepted = useCallback(
-    async ({ ans }: { ans: RTCSessionDescriptionInit }) => {
-      console.log("Call got accepted:", ans);
+    async ({ ans, from }: { ans: RTCSessionDescriptionInit; from: string }) => {
+      console.log("Call got accepted from:", from, ans);
       await setRemoteAns(ans);
+      setRemoteEmailId((prev) => prev ?? from); // Set email if not already set
     },
     [setRemoteAns]
   );
@@ -64,10 +68,7 @@ function Room() {
       audio: true,
     });
     setMyStream(stream);
-    stream.getTracks().forEach((track) => {
-      peer.addTrack(track, stream);
-    });
-  }, [peer]);
+  }, []);
 
   useEffect(() => {
     socket?.on("user-joined", handleNewUserJoined);
@@ -81,6 +82,27 @@ function Room() {
     };
   }, [socket, handleNewUserJoined, handleIncomingCall, handleCallAccepted]);
 
+  const handleNegotiation = useCallback(async () => {
+    console.log("Oops! Negotiation needed");
+    if (!remoteEmailId) {
+      console.error("Remote Email ID is not set yet!");
+      return;
+    }
+    const localOffer = peer?.localDescription;
+    if (localOffer) {
+      socket?.emit("call-user", { emailId: remoteEmailId, offer: localOffer });
+    } else {
+      console.error("localDescription is null");
+    }
+  }, [peer, socket, remoteEmailId]);
+
+  useEffect(() => {
+    peer.addEventListener("negotiationneeded", handleNegotiation);
+    return () => {
+      peer.removeEventListener("negotiationneeded", handleNegotiation);
+    };
+  }, [handleNegotiation]);
+
   useEffect(() => {
     getUserMediaStream();
   }, [getUserMediaStream]);
@@ -89,6 +111,7 @@ function Room() {
     <div className="min-h-screen bg-[#000000]">
       <div className="text-white font-bold text-3xl p-10 w-full text-center">
         <div>Room</div>
+        <div className="text-white">You are connected to {remoteEmailId}</div>
       </div>
       {myStream && (
         <>

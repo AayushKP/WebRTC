@@ -69,12 +69,10 @@ export const PeerProvider = ({ children }: PeerProviderProps) => {
   };
 
   const sendStream = async (stream: MediaStream): Promise<void> => {
-    const tracks = stream.getTracks();
-    tracks.forEach((track) => {
-      const existingSender = peer
-        .getSenders()
-        .find((sender) => sender.track === track);
-      if (!existingSender) {
+    if (!peer) return;
+    const senders = peer.getSenders();
+    stream.getTracks().forEach((track) => {
+      if (!senders.find((sender) => sender.track === track)) {
         peer.addTrack(track, stream);
       }
     });
@@ -92,7 +90,7 @@ export const PeerProvider = ({ children }: PeerProviderProps) => {
     return () => {
       peer.removeEventListener("track", handleTrackEvent);
     };
-  }, [handleTrackEvent]);
+  }, [handleTrackEvent, peer]);
 
   return (
     <PeerContext.Provider
