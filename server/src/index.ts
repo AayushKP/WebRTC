@@ -1,28 +1,67 @@
-import express, { Request, Response } from "express";
-import bodyParser from "body-parser";
-import { Server } from "socket.io";
-import { setupSocket } from "./socket"; // Import socket setup function
+import { Server, Socket } from "socket.io";
 
-const app = express();
-const PORT = 3000;
-const SOCKET_PORT = 3001;
+interface JoinRoomData {
+  email: string;
+  room: string;
+}
 
-const io = new Server(SOCKET_PORT, {
+interface CallOfferData {
+  to: string;
+  offer: RTCSessionDescriptionInit;
+}
+
+interface CallAnswerData {
+  to: string;
+  ans: RTCSessionDescriptionInit;
+}
+
+interface NegotiationData {
+  to: string;
+  offer: RTCSessionDescriptionInit;
+}
+
+interface NegotiationFinalData {
+  to: string;
+  ans: RTCSessionDescriptionInit;
+}
+
+const io = new Server(3001, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: "*",
     methods: ["GET", "POST"],
   },
 });
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+const emailToSocketIdMap = new Map<string, string>();
+const socketidToEmailMap = new Map<string, string>();
 
-app.get("/", (req: Request, res: Response) => {
-  res.send("Welcome to the TypeScript Express Server!");
-});
+io.on("connection", (socket: Socket) => {
+  console.log(`Socket Connected`, socket.id);
 
-app.listen(PORT, () => {
-  console.log(`HTTP Server is running on http://localhost:${PORT}`);
-  console.log(`Socket Server is running on http://localhost:${SOCKET_PORT}`);
-  setupSocket(io);
+  socket.on("room:join", (data: JoinRoomData) => {
+    const { email, room } = data;
+    emailToSocketIdMap.set(email, socket.id);
+    socketidToEmailMap.set(socket.id, email);
+    io.to(room).emit("user:joined", { email, id: socket.id });
+    socket.join(room);
+    io.to(socket.id).emit("room:join", data);
+  });
+
+  socket.on("user:call", ({ to, offer }: CallOfferData) => {
+    io.to(to).emit("incoming:call", { from: socket.id, offer });
+  });
+
+  socket.on("call:accepted", ({ to, ans }: CallAnswerData) => {
+    io.to(to).emit("call:accepted", { from: socket.id, ans });
+  });
+
+  socket.on("peer:nego:needed", ({ to, offer }: NegotiationData) => {
+    console.log("peer:nego:needed", offer);
+    io.to(to).emit("peer:nego:needed", { from: socket.id, offer });
+  });
+
+  socket.on("peer:nego:done", ({ to, ans }: NegotiationFinalData) => {
+    console.log("peer:nego:done", ans);
+    io.to(to).emit("peer:nego:final", { from: socket.id, ans });
+  });
 });
