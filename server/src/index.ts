@@ -1,4 +1,10 @@
 import { Server, Socket } from "socket.io";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const PORT = process.env.PORT || 3001;
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "*";
 
 interface JoinRoomData {
   email: string;
@@ -25,9 +31,9 @@ interface NegotiationFinalData {
   ans: RTCSessionDescriptionInit;
 }
 
-const io = new Server(3001, {
+const io = new Server(Number(PORT), {
   cors: {
-    origin: "*",
+    origin: FRONTEND_ORIGIN,
     methods: ["GET", "POST"],
   },
 });
@@ -36,7 +42,7 @@ const emailToSocketIdMap = new Map<string, string>();
 const socketidToEmailMap = new Map<string, string>();
 
 io.on("connection", (socket: Socket) => {
-  console.log(`Socket Connected`, socket.id);
+  console.log(`Socket Connected: ${socket.id}`);
 
   socket.on("room:join", (data: JoinRoomData) => {
     const { email, room } = data;
@@ -65,3 +71,5 @@ io.on("connection", (socket: Socket) => {
     io.to(to).emit("peer:nego:final", { from: socket.id, ans });
   });
 });
+
+console.log(`Socket.IO server running on port ${PORT}`);
