@@ -12,8 +12,9 @@ interface CallData {
 const RoomPage: React.FC = () => {
   const socket = useSocket();
   const [remoteSocketId, setRemoteSocketId] = useState<string | null>(null);
-  const [myStream, setMyStream] = useState<MediaStream>();
-  const [remoteStream, setRemoteStream] = useState<MediaStream>();
+  const [myStream, setMyStream] = useState<MediaStream | null>(null);
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  const [isCalling, setIsCalling] = useState<boolean>(false);
 
   const handleUserJoined = useCallback(
     ({ email, id }: { email: string; id: string }) => {
@@ -26,26 +27,37 @@ const RoomPage: React.FC = () => {
   const handleCallUser = useCallback(async () => {
     if (!remoteSocketId) return;
 
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: true,
-    });
-    const offer = await peer.getOffer();
-    socket?.emit("user:call", { to: remoteSocketId, offer });
-    setMyStream(stream);
+    setIsCalling(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: true,
+      });
+      const offer = await peer.getOffer();
+      socket?.emit("user:call", { to: remoteSocketId, offer });
+      setMyStream(stream);
+    } catch (error) {
+      console.error("Error accessing media devices:", error);
+    } finally {
+      setIsCalling(false);
+    }
   }, [remoteSocketId, socket]);
 
   const handleIncomingCall = useCallback(
     async (data: CallData) => {
       setRemoteSocketId(data.from);
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: true,
-      });
-      setMyStream(stream);
-      console.log(`Incoming Call`, data.from, data.offer);
-      const ans = await peer.getAnswer(data.offer);
-      socket?.emit("call:accepted", { to: data.from, ans });
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: true,
+        });
+        setMyStream(stream);
+        console.log(`Incoming Call`, data.from, data.offer);
+        const ans = await peer.getAnswer(data.offer);
+        socket?.emit("call:accepted", { to: data.from, ans });
+      } catch (error) {
+        console.error("Error handling incoming call:", error);
+      }
     },
     [socket]
   );
@@ -135,47 +147,51 @@ const RoomPage: React.FC = () => {
   ]);
 
   return (
-    <div className="flex flex-col items-center p-6 bg-gray-800 min-h-screen">
-      <h1 className="text-4xl font-extrabold text-white">Room Page</h1>
-      <h4 className="text-lg mt-4 text-white">
-        {remoteSocketId ? "Connected" : "No one in room"}
-      </h4>
+    <div className="flex flex-col items-center p-6 bg-gray-900 min-h-screen text-white">
+      <h1 className="text-4xl font-bold mb-4">Video Call Room</h1>
+      <p className="text-lg mb-8">
+        {remoteSocketId
+          ? "Connected to a peer"
+          : "Waiting for someone to join..."}
+      </p>
 
-      <div className="flex flex-col md:flex-row w-full mt-8 justify-center gap-4">
+      <div className="flex flex-col md:flex-row w-full max-w-6xl gap-8">
         {/* Local Stream Section */}
         {myStream && (
-          <div className="flex flex-col items-center w-full md:w-1/2 bg-gray-700 p-4 rounded-lg shadow-lg">
-            <h2 className="text-xl text-white mb-2">My Stream</h2>
+          <div className="flex flex-col items-center w-full md:w-1/2 bg-gray-800 p-6 rounded-lg shadow-xl">
+            <h2 className="text-xl font-semibold mb-4">Your Video</h2>
             <ReactPlayer
               playing
               muted
-              height="250px"
+              height="300px"
               width="100%"
               url={myStream}
+              className="rounded-lg overflow-hidden"
             />
           </div>
         )}
 
         {/* Remote Stream Section */}
         {remoteStream && (
-          <div className="flex flex-col items-center w-full md:w-1/2 bg-gray-700 p-4 rounded-lg shadow-lg">
-            <h2 className="text-xl text-white mb-2">Remote Stream</h2>
+          <div className="flex flex-col items-center w-full md:w-1/2 bg-gray-800 p-6 rounded-lg shadow-xl">
+            <h2 className="text-xl font-semibold mb-4">Remote Video</h2>
             <ReactPlayer
               playing
-              height="250px"
+              height="300px"
               width="100%"
               url={remoteStream}
+              className="rounded-lg overflow-hidden"
             />
           </div>
         )}
       </div>
 
       {/* Action Buttons */}
-      <div className="mt-6 flex gap-4">
+      <div className="mt-8 flex gap-4">
         {myStream && (
           <button
             onClick={sendStreams}
-            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Send Stream
           </button>
@@ -183,9 +199,10 @@ const RoomPage: React.FC = () => {
         {remoteSocketId && (
           <button
             onClick={handleCallUser}
-            className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+            disabled={isCalling}
+            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-500"
           >
-            Call
+            {isCalling ? "Calling..." : "Call"}
           </button>
         )}
       </div>
