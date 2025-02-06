@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "types": ["node", "express", "socket.io", "dotenv"],
     "target": "ES2022",
     "module": "commonjs",
     "outDir": "./dist",
