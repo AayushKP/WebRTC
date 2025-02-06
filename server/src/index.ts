@@ -10,24 +10,14 @@ const app: Application = express();
 const server: http.Server = http.createServer(app);
 
 const PORT: number = Number(process.env.PORT) || 3000;
-const FRONTEND_ORIGIN: string = process.env.ORIGIN || "https://vrtc.vercel.app";
 
-// CORS middleware for Express requests
 app.use(
   cors({
-    origin: FRONTEND_ORIGIN,
+    origin: process.env.ORIGIN,
     methods: ["GET", "POST"],
     credentials: true,
   })
 );
-
-app.use((req: Request, res: Response, next: NextFunction) => {
-  res.header("Access-Control-Allow-Origin", FRONTEND_ORIGIN);
-  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.header("Access-Control-Allow-Credentials", "true");
-  next();
-});
 
 interface JoinRoomData {
   email: string;
@@ -56,11 +46,10 @@ interface NegotiationFinalData {
 
 const io: Server = new Server(server, {
   cors: {
-    origin: FRONTEND_ORIGIN,
+    origin: process.env.ORIGIN,
     methods: ["GET", "POST"],
     credentials: true,
   },
-  transports: ["websocket", "polling"],
 });
 
 const emailToSocketIdMap = new Map<string, string>();
