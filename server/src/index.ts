@@ -6,11 +6,9 @@ import http from "http";
 dotenv.config();
 
 const app: Application = express();
-const server: http.Server = http.createServer(app); // Create an HTTP server
+const server: http.Server = http.createServer(app);
 
 const PORT: number = Number(process.env.PORT) || 3000;
-const FRONTEND_ORIGIN: string =
-  process.env.FRONTEND_ORIGIN || "https://vrtc.vercel.app";
 
 interface JoinRoomData {
   email: string;
@@ -39,7 +37,7 @@ interface NegotiationFinalData {
 
 const io: Server = new Server(server, {
   cors: {
-    origin: FRONTEND_ORIGIN,
+    origin: process.env.ORIGIN,
     methods: ["GET", "POST"],
     credentials: true,
   },
