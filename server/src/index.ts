@@ -1,10 +1,16 @@
 import { Server, Socket } from "socket.io";
 import dotenv from "dotenv";
+import express, { Application } from "express";
+import http from "http";
 
 dotenv.config();
 
-const PORT = process.env.PORT || 3000;
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN ;
+const app: Application = express();
+const server: http.Server = http.createServer(app); // Create an HTTP server
+
+const PORT: number = Number(process.env.PORT) || 3000;
+const FRONTEND_ORIGIN: string =
+  process.env.FRONTEND_ORIGIN || "https://vrtc.vercel.app";
 
 interface JoinRoomData {
   email: string;
@@ -31,9 +37,9 @@ interface NegotiationFinalData {
   ans: RTCSessionDescriptionInit;
 }
 
-const io = new Server(Number(PORT), {
+const io: Server = new Server(server, {
   cors: {
-    origin: FRONTEND_ORIGIN || "https://vrtc.vercel.app",
+    origin: FRONTEND_ORIGIN,
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -74,4 +80,7 @@ io.on("connection", (socket: Socket) => {
   });
 });
 
-console.log(`Socket.IO server running on port ${PORT}`);
+// Start the HTTP server
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
