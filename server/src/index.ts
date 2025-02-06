@@ -46,7 +46,7 @@ interface NegotiationFinalData {
 
 const io: Server = new Server(server, {
   cors: {
-    origin: process.env.ORIGIN || "https://vrtc.vercel.app",
+    origin: process.env.ORIGIN,
     methods: ["GET", "POST"],
     credentials: true,
   },
