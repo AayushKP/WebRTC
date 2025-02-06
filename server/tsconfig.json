@@ -1,13 +1,15 @@
 {
   "compilerOptions": {
-    "types": ["node", "express", "socket.io", "dotenv"],
-    "target": "ES2022",
+    "target": "ES2020",
     "module": "commonjs",
-    "outDir": "./dist",
+    "moduleResolution": "node",
     "esModuleInterop": true,
+    "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "noEmitOnError": true,
-    "skipLibCheck": true
-  }
+    "outDir": "./dist",
+    "types": ["node", "express", "socket.io", "cors", "dotenv"],
+    "strict": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }
