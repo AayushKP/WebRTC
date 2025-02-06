@@ -46,10 +46,11 @@ interface NegotiationFinalData {
 
 const io: Server = new Server(server, {
   cors: {
-    origin: process.env.ORIGIN,
+    origin: process.env.ORIGIN || "https://vrtc.vercel.app",
     methods: ["GET", "POST"],
     credentials: true,
   },
+  transports: ["websocket", "polling"],
 });
 
 const emailToSocketIdMap = new Map<string, string>();
@@ -84,6 +85,10 @@ io.on("connection", (socket: Socket) => {
     console.log("peer:nego:done", ans);
     io.to(to).emit("peer:nego:final", { from: socket.id, ans });
   });
+});
+
+app.get("/", (req: Request, res: Response) => {
+  res.send("Server is running");
 });
 
 // Start the HTTP server
