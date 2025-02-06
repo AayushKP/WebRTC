@@ -33,10 +33,11 @@ interface NegotiationFinalData {
 
 const io = new Server(Number(PORT), {
   cors: {
-    origin: FRONTEND_ORIGIN,
+    origin: FRONTEND_ORIGIN || "https://vrtc.vercel.app",
     methods: ["GET", "POST"],
     credentials: true,
   },
+  transports: ["websocket", "polling"],
 });
 
 const emailToSocketIdMap = new Map<string, string>();
