@@ -1,11 +1,13 @@
 {
   "compilerOptions": {
+    "types": ["node", "express", "socket.io", "dotenv"],
     "target": "ES2022",
     "module": "commonjs",
     "outDir": "./dist",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
+    "noEmitOnError": true,
     "skipLibCheck": true
   }
 }
