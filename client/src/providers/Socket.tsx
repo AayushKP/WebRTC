@@ -15,7 +15,7 @@ export const useSocket = (): SocketContextType => {
 };
 
 export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
-  const socket = useMemo(() => io("http://localhost:3001"), []);
+  const socket = useMemo(() => io(import.meta.env.VITE_SOCKET_URL), []);
 
   return (
     <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>
